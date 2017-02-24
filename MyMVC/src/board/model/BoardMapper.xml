@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="board.model.BoardMapper">
+
+	<insert id="insertBoard" parameterType="Board">
+		insert into board values(board_idx_seq.nextval,
+		#{name},#{email:VARCHAR},#{homepage:VARCHAR},
+		#{pwd},#{subject:VARCHAR},#{content:VARCHAR},
+		systimestamp,#{readnum:NUMERIC},#{filename:VARCHAR},
+		#{filesize:NUMERIC},#{refer},#{lev},#{sunbun}		
+		)	
+	</insert>
+	<!--[게시글 목록]  -->
+	<select id="listBoard" resultType="Board">
+		select * from board order by idx desc
+	</select>
+	<!-- [게시글 목록] 페이징 처리시 - map에서 start라는 key값에 해당하는 value값을 #{}에 넣어줌 -->
+	<select id="listBoardPaging" parameterType="map" resultType="board">
+		select * from (select rownum rn, A.* from
+		(select * from board order by idx desc) A)
+		where rn between #{start} and #{end}
+	</select>
+	<!--[게시글 목록 관련] 게시글 수 -->
+	<select id="totalCount" resultType="int">
+		select count(*) cnt from board
+	</select>
+	
+	<!--[글내용 보기 관련] 조회수 증가  m38-653-620-->
+	<update id="updateReadnum" parameterType="int">
+		update board set readnum=readnum+1 where idx=#{value}
+	</update>
+	<select id="selectBoard" parameterType="int"
+	 								resultType="Board">
+		select * from board where idx=#{value}	 								
+	</select>
+	
+	<!--[글 삭제 및 수정 관련] 해당 글 비번 가져오기  -->	
+	<select id="selectPwd" parameterType="int" resultType="string">
+		select pwd from board where idx=#{idx}
+	</select>
+	<select id="selectFile" parameterType="int" resultType="string">
+		select filename from board where idx=#{idx}
+	</select>
+	<!--[글 삭제]  -->
+	<delete id="deleteBoard" parameterType="int">
+		delete from board where idx=#{idx}
+	</delete>	
+	<!-- [글 수정 관련]글 수정 처리 -->
+	<update id="updateBoard" parameterType="board">
+		update board set name=#{name},email=#{email:VARCHAR},
+		homepage=#{homepage:VARCHAR},pwd=#{pwd},subject=#{subject},
+		content=#{content:VARCHAR},filename=#{filename:VARCHAR},
+		filesize=#{filesize:NUMERIC},wdate=systimestamp
+		where idx=#{idx}
+	</update>
+	<!-- [12.05][글 검색 관련] 검색한 글의 게시물 수 가져오기
+		myBatis의 태그 where(똑같이 where절)와 if(null체크-문자열 결합을 따로 ||로 해줘야한다.)를 활용
+			select count(idx) from board
+			where subject like '%1%';
+	 -->
+	<select id="findTotalCount" parameterType="map" resultType="int">
+		select count(idx) from board 
+		<where>
+			<if test="findType!=null and findString!=''">
+				${findType} like '%'||#{findString}||'%'
+			</if>
+		</where>
+	</select>
+	<!-- [12.05][글 검색 관련] 검색한 글 목록 가져오기
+			where절이 order by앞에 추가됨
+		[sql Injection] #으로 넣으면 ''로 MyBatis가 감싸버려서 column명이 제대로 입력이 되지 않는다. 
+						이경우 #을 $로 바꾸어 sql문 실행
+	 -->
+	<select id="findListBoard" parameterType="map" resultType="board">
+		select * from (select rownum rn, A.* from
+		(select * from board 
+		<where>
+			<if test="findType!=null and findString!=''">			
+				${findType} like '%'||#{findString}||'%'
+			</if>
+		</where>			
+		order by idx desc) A)
+		where rn between #{start} and #{end}
+	</select>
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
